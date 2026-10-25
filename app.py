@@ -16,6 +16,46 @@ except ImportError:
 
 st.set_page_config(page_title="IFX | Defect Analytics", page_icon="▦", layout="wide")
 
+# --- USER AUTHENTICATION DICTIONARY ---
+USERS = {
+    "admin_danial": "password123",  # Admin utama (Anda)
+    "operator1": "vegasparrow2026",
+    "inspector_A": "defect2026",
+}
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+    st.session_state.username = ""
+
+if not st.session_state.authenticated:
+    st.title("🔒 Restricted Access - IC Package Defect Analytics")
+    st.write("Please log in with your authorized ID and password to access the system.")
+    
+    with st.form("login_form"):
+        username_input = st.text_input("Username")
+        password_input = st.text_input("Password", type="password")
+        submit_button = st.form_submit_button("Log In")
+        
+        if submit_button:
+            if username_input in USERS and USERS[username_input] == password_input:
+                st.session_state.authenticated = True
+                st.session_state.username = username_input
+                st.success("Login successful! Loading application...")
+                st.rerun()
+            else:
+                st.error("Invalid username or password. Please try again.")
+    
+    st.stop()
+
+# --- SIDEBAR: USER INFO & LOGOUT ---
+st.sidebar.markdown(f"👤 Logged in as: **{st.session_state.username}**")
+if st.sidebar.button("Log Out"):
+    st.session_state.authenticated = False
+    st.session_state.username = ""
+    st.rerun()
+
+st.sidebar.markdown("---")
+
 st.markdown("""
 <style>
 .stApp { background: #0E1117; color: #E6EAF2; }
@@ -368,7 +408,13 @@ with tab_dashboard:
                 trend_df = valid.dropna(subset=["Timestamp"]).copy()
                 trend_df["Date"] = trend_df["Timestamp"].dt.date
                 trend_grouped = trend_df.groupby(["Date"]).size().reset_index(name="Rejects")
+                
                 fig_trend = px.line(trend_grouped, x="Date", y="Rejects", markers=True)
+                fig_trend.update_traces(
+                    text=trend_grouped["Rejects"],
+                    textposition="top center",
+                    mode="lines+markers+text"
+                )
                 fig_trend.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#E6EAF2", margin=dict(t=10, b=10, l=10, r=10))
                 st.plotly_chart(fig_trend, use_container_width=True)
             else:
